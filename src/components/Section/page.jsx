@@ -203,16 +203,7 @@
           setIsFileUploaded(false)
         }}/>
       ) : (
-      //   <div>
-      
-      //     <input
-      //       type="file"
-      //       accept=".apk,.ipa"
-      //       onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
-      //     />
-      // </div>
-      
-
+    
 
 
         

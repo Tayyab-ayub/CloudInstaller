@@ -8,6 +8,11 @@ const ApiRoutes: ApiRoutesInterface = {
         changePassword : "/change-password",
         ota : "ota/",
         download: "",
+        listuserapp : "users/files/",
+         deletefile: "ota/",
+
+        
+        
 
 
     },

@@ -1,13 +1,14 @@
 "use client"
 import Image from "next/image";
 import Banner from '../components/Banner/page'
-// s
+// import FileDetails from '../app/FileDetails/page'
 
 
 export default function Home() {
   return (
     <main>
        <Banner/>
+       {/* <FileDetails/> */}
        
      
     </main>

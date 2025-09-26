@@ -3,7 +3,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 import ApiRoutes from "../../helpers/ApiRoutes";
-import { AuthResponseModel, UserSliceState } from "../../helpers/Interfaces";
+import { AuthResponseModel, FileDetails, FileDetailsResponse, UserSliceState } from "../../helpers/Interfaces";
 import NetworkRequest from "../../helpers/NetworkManager";
 
 // async thunk for signu (POST request)
@@ -47,6 +47,7 @@ export const loginUser = createAsyncThunk(
 
   }
 );
+// File Upload
 export const fileUpload = createAsyncThunk(
   "userSlice/fileupload",
   async (payload, { dispatch, rejectWithValue }) => {
@@ -60,28 +61,72 @@ export const fileUpload = createAsyncThunk(
           "Access-Control-Allow-Origin": "*",
         },
         onUploadProgress: (progressEvent) => {
-          console.log("Progress Event =====",progressEvent)
-          if(progressEvent.progress && progressEvent.progress> 0 ) {
-            let fileUploadProgress = parseInt(progressEvent.progress* 100); // Parse progress as an integer
-             fileUploadProgress = Math.min(Math.max(fileUploadProgress, 0), 100); // Clamp progress between 0 and 100
-              dispatch(fileUploadReducer({ uploadProgress: fileUploadProgress }));
-          }else{
-             dispatch(fileUploadReducer({ uploadProgress: 0 }));
+          console.log("Progress Event =====", progressEvent)
+          if (progressEvent.progress && progressEvent.progress > 0) {
+            let fileUploadProgress = parseInt(progressEvent.progress * 100); // Parse progress as an integer
+            fileUploadProgress = Math.min(Math.max(fileUploadProgress, 0), 100); // Clamp progress between 0 and 100
+            dispatch(fileUploadReducer({ uploadProgress: fileUploadProgress }));
+          } else {
+            dispatch(fileUploadReducer({ uploadProgress: 0 }));
           }
-          
+
         }
       })
       return response
     }
     catch (error) {
-      console.log("Error ====",error)
-      if(error.code === '"ERR_NETWORK"') {
+      console.log("Error ====", error)
+      if (error.code === '"ERR_NETWORK"') {
         throw error
       }
       if (!error.response) {
         throw error;
       }
-      
+
+      return rejectWithValue(error.response.data);
+    }
+
+  }
+);
+// Record of Files
+export const UserAppList = createAsyncThunk(
+  "userSlice/UserAppList",
+  async (payload  :{
+    queryParams : string, 
+    authToken : string, 
+  }, { rejectWithValue }) => {
+    try {
+      let path = ApiRoutes.ENDPOINTS.listuserapp + payload.queryParams
+        let response =  await NetworkRequest.get(path,{
+        headers : {
+          'Authorization' : `Token ${payload.authToken}`
+        }
+      })
+      return response.data 
+    }
+    catch (error) {
+      if (!error.response) {
+        throw error;
+      }
+      return rejectWithValue(error.response.data);
+    }
+
+  }
+);
+// Delete File
+export const deletefile = createAsyncThunk(
+  "userSlice/deletefile",
+  async (payload : {id : number}, { rejectWithValue }) => {
+    try {
+      let path = ApiRoutes.ENDPOINTS.deletefile + payload.id + "/"
+      let response = await NetworkRequest.delete(path)
+
+      return response.data
+    }
+    catch (error) {
+      if (!error.response) {
+        throw error;
+      }
       return rejectWithValue(error.response.data);
     }
 
@@ -89,7 +134,16 @@ export const fileUpload = createAsyncThunk(
 );
 
 
-const INITIAL_STATE: UserSliceState = { user: null, loading: false, error: null, authToken: null, fileProgress: 0 }
+
+const INITIAL_STATE: UserSliceState = {
+  user: null,
+  loading: false,
+  error: null,
+  authToken: null,
+  fileProgress: 0,
+  listapps: [],
+  fileUploadResponse: null
+}
 const userSlice = createSlice({
   name: "userSlice",
   initialState: INITIAL_STATE,
@@ -116,7 +170,7 @@ const userSlice = createSlice({
       .addCase(signupUser.fulfilled, (state, action: PayloadAction<AuthResponseModel>) => {
         state.loading = false;
         state.user = action.payload.data.user ?? null;
-        // state.authToken = action.payload.data.token ?? null
+        state.authToken = action.payload.data.token ?? null
 
       })
       .addCase(signupUser.rejected, (state, action) => {
@@ -138,6 +192,22 @@ const userSlice = createSlice({
         state.error = null;
       })
 
+      // FileUploadList
+      .addCase(UserAppList.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(UserAppList.fulfilled, (state, action: PayloadAction<FileDetailsResponse>) => {
+        state.listapps = action.payload.data;
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(UserAppList.rejected, (state, _) => {
+        state.loading = false;
+        state.error = null;
+      })
+
+      // LoginUser
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -145,12 +215,32 @@ const userSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action: PayloadAction<AuthResponseModel>) => {
         state.loading = false;
         state.user = action.payload.data.user ?? null;
-        // state.authToken = action.payload.data.token ?? null
+        state.authToken = action.payload.data.token ?? null
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
+      // DeleteFile
+      .addCase(deletefile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deletefile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+        console.log("Fullfilled state ======",action)
+        console.log("Before Filter =====",state.listapps)
+        let listappsFiltered = state.listapps.filter((item) => item.id != action.meta.arg.id) 
+        console.log("After Filtered ====",listappsFiltered)
+        state.listapps = state.listapps.filter((item) => item.id != action.meta.arg.id) 
+      })
+      .addCase(deletefile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+
 
   },
 });

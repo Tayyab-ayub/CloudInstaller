@@ -77,6 +77,8 @@ function page() {
     console.log("Api Error -----", error);
     toast.error(error?.message ?? "Something went wrong!");
   });
+
+  
     
 
   };

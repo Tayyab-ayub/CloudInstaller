@@ -6,7 +6,10 @@ export interface ApiRoutesInterface {
         changePassword: string,
         ota : string,
         download : string,
+        listuserapp : string,
+        deletefile : string,
         
+
 
         
     }
@@ -20,7 +23,6 @@ export interface UserResponseModel {
     email: string,
 }
 
-
 export interface GlobalSliceState {
     loading: boolean,
     error: any,
@@ -33,8 +35,13 @@ export interface FileUploadProgress {
 
 export interface UserSliceState extends GlobalSliceState,FileUploadProgress {
     user: UserResponseModel | null,
-    authToken: string | null
+    authToken: string | null,
+    listapps : FileDetails[],
 }
+// export interface FileList{
+//     listapps : FileDetails[] | [] ,
+// }
+
 
 
 export interface GlobalResponseModel {
@@ -48,3 +55,20 @@ export interface AuthResponseModel extends GlobalResponseModel {
         user: UserResponseModel | null
     }
 }
+
+export interface FileDetails extends GlobalResponseModel{
+    
+        id: number,
+        type: string,
+        token: string,
+        valid_until: string,
+        user: number,
+        bundle_name : string,
+        bundle_identifier : string,
+        version_code: string,
+       
+    }
+ export interface FileDetailsResponse extends GlobalResponseModel {
+    data: FileDetails[];   
+}
+

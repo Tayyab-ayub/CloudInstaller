@@ -1,9 +1,57 @@
 "use client"
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
+import FileDetails from "../FileDetails/page";
+import { deletefile, filedetails } from "../redux/slices/userSlice";
+import { useDispatch, useSelector } from 'react-redux';
+import { unwrapResult } from '@reduxjs/toolkit';
+import { UserAppList } from '../redux/slices/userSlice';
+import Loader from '../Loaders';
+import Paginate from '../Pagination'
 
 function Page() {
+    const dispatch = useDispatch();
+    const [isFileUploaded, setIsFileUploaded] = useState(false)
+    const { user, loading, authToken: bearerToken, listapps } = useSelector((state) => state.userSlice);
+    const [loadinglist, setloadinglist] = useState(true);
+    const [users, setUsers] = useState([]);
+    const [page, setPage] = useState(1);
+    const itemsPerPage = 2;
+    const offset = (page - 1) * itemsPerPage;
+    const item0ffset = offset + itemsPerPage
 
-    
+
+    console.log("Rendering Dashboard")
+
+
+    const currentItems = listapps.slice(offset,item0ffset)   
+
+    const dispatchFileList = (userId, token) => {
+        const payload = {
+            queryParams: `${userId}/`,
+            authToken: token,
+        };
+
+        dispatch(UserAppList(payload))
+            .then(unwrapResult)
+            .then((resp) => {
+                console.log("List response ====", resp);
+            })
+            .catch((error) => {
+                console.log("Error fetching file details ====", error);
+            });
+    };
+
+    useEffect(() => {
+        if (bearerToken && user?.id) {
+            dispatchFileList(user.id, bearerToken);
+
+            setTimeout(() => setloadinglist(false), 2000)
+
+        }
+    }, [user, page]);
+
+    if (loadinglist) return <Loader size={40} color="#9333ea" />;
+
     return (
         <div id="app" className="min-h-screen bg-gray-50 text-gray-800">
             {/* Content */}
@@ -90,65 +138,40 @@ function Page() {
                 </section>
 
                 {/* Usage Section */}
-                <section id="usage">
-                    <h2 className="text-lg font-semibold mb-2 border-b border-black-300 pb-2">Usage</h2>
-                    <p className="text-gray-600">
-                        This month, your apps have been downloaded 0 times out of your limit of 50. To
-                        increase your limit, explore our{" "}
-                        <a href="/my/plans" className="text-indigo-600 hover:underline">
-                            service plans
-                        </a>.
-                    </p>
-                    <p className="mt-2 text-gray-600">
-                        Detailed, per-app statistics are available when you sign up for one of our service plans.
-                    </p>
-                </section>
+                {user && !loading ? (
+                    <FileDetails listapps={currentItems ?? []}
+                    />
+                ) : (
+                    <section id="usage">
+                        <h2 className="text-lg font-semibold mb-2 border-b border-black-300 pb-2">Usage</h2>
+                        <p className="text-gray-600">
+                            This month, your apps have been downloaded 0 times out of your limit of 50. To
+                            increase your limit, explore our{" "}
+                            <a href="/my/plans" className="text-indigo-600 hover:underline">
+                                service plans
+                            </a>.
+                        </p>
+                        <p className="mt-2 text-gray-600">
+                            Detailed, per-app statistics are available when you sign up for one of our service plans.
+                        </p>
+                    </section>
+                )}
+                <div className='flex items-center justify-center'>
+                    <Paginate
+                        totalItems={listapps.length ?? 0}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={(page) => {
+                            setPage(page)
+                            console.log("Page++++", page)
+                        }}
 
-                {/* Features Section */}
-                <section id="features">
-                    <h2 className="text-lg font-semibold mb-2 border-b border-black-300 pb-2">Features</h2>
-                    <p className="text-gray-600 mb-4">
-                        Would you be interested in any of these features? Let us know!
-                    </p>
-                    <ul className="space-y-2 mb-4">
-                        <li className="flex items-center space-x-2">
-                            <span>👍</span>
-                            <span>Integration with app build tools and frameworks</span>
-                        </li>
-                        <li className="flex items-center space-x-2">
-                            <span>👍</span>
-                            <span>More download stats and analytics</span>
-                        </li>
-                        <li className="flex items-center space-x-2">
-                            <span>👍</span>
-                            <span>Single-use share links for extra security and per-user tracking</span>
-                        </li>
-                    </ul>
+                        currentPage={page}
+                    />
+                </div>
 
-                    <p className="text-gray-600">
-                        AppHost users already voted the following suggestions into features:
-                    </p>
-                    <ul className="list-disc pl-5 text-gray-700 mt-2 space-y-1">
-                        <li>Upload API for command-line or automated app uploads</li>
-                        <li>Maintain access to previous app versions</li>
-                        <li>Current-version/update API that apps can use to see if there's a newer version available</li>
-                    </ul>
-                </section>
 
-                {/* Support Section */}
-                <section id="support">
-                    <h2 className="text-lg font-semibold mb-2">Support</h2>
-                    <p className="text-gray-600">
-                        Want to change your password? Click{" "}
-                        <a href="#" className="text-indigo-600 hover:underline">here</a>.
-                    </p>
-                    <p className="text-gray-600">
-                        For help and account inquiries,{" "}
-                        <a href="mailto:support@appho.st" className="text-indigo-600 hover:underline">
-                            send us an email
-                        </a>.
-                    </p>
-                </section>
+
+
             </main>
         </div>
     )
